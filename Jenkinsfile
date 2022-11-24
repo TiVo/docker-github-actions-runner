@@ -24,10 +24,12 @@ pipeline {
                         docker.withRegistry( 'https://docker.tivo.com', 'docker-registry' ) {
                             image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile --build-arg TARGETPLATFORM=${imageTargetPlatform} ." )
                             image.push()
+                        }
                     }
                 }
             }
         }
+    }
 
     post {
         success {
