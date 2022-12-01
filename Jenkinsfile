@@ -22,7 +22,7 @@ pipeline {
                     if (env.BRANCH_NAME ==~ /(tivo-build)/) {
                         buildId = "${imageVersion}-${imageTargetPlatform}"
                         docker.withRegistry( 'https://docker.tivo.com', 'docker-registry' ) {
-                            image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile.tivo-build --build-arg TARGETPLATFORM=${imageTargetPlatform} ." )
+                            image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile.tivo-build --build-arg TARGETPLATFORM=${imageTargetPlatform} --build-arg GH_RUNNER_VERSION=${imageVersion} ." )
                             image.push()
                         }
                     }
