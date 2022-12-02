@@ -1,14 +1,23 @@
 name: Repo Sync
 
 on:
-  # schedule:
-  #   - cron: "*/15 * * * *" # every 15 minutes. set to whatever interval you like
+  schedule:
+    - cron: "*/30 * * * *"
   workflow_dispatch:
+    inputs:
+      pr_destination_branch:
+        type: choice
+        description: Destination branch
+        options:
+          - master
+          - "tivo-build"
 
 jobs:
   repo-sync:
     name: Repo Sync
     runs-on: ubuntu-latest
+    env:
+      PRDestinationBranch: ${{ github.event_name == 'schedule' && 'tivo-build' || github.event.inputs.pr_destination_branch }}
     steps:
       - uses: actions/checkout@v2
       - uses: repo-sync/github-sync@v2
@@ -16,12 +25,13 @@ jobs:
         with:
           source_repo: ${{ secrets.REPO_SYNC_SOURCE_REPO }}
           source_branch: master
-          destination_branch: ${{ secrets.FORK_SYNC_INTERMEDIATE_BRANCH }}
+          destination_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
           github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
       - uses: repo-sync/pull-request@v2
         name: Create pull request
         with:
-          source_branch: ${{ secrets.FORK_SYNC_INTERMEDIATE_BRANCH }}
-          destination_branch: master
-          pr_title: "[Automated] ${{ github.ref }} into main"
+          source_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
+          destination_branch: ${{ github.event.inputs.pr_destination_branch }}
+          pr_title: "[Automated] ${{ github.ref }} into ${{ github.event.inputs.pr_destination_branch }}"
+          pr_label: "repo-sync-automated"
           github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
