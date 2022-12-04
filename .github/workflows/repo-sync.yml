@@ -31,7 +31,7 @@ jobs:
         name: Create pull request
         with:
           source_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
-          destination_branch: ${{ github.event.inputs.pr_destination_branch }}
-          pr_title: "[Automated] ${{ github.ref }} into ${{ github.event.inputs.pr_destination_branch }}"
+          destination_branch: ${{ env.PRDestinationBranch }}
+          pr_title: "[Automated] ${{ github.ref }} into ${{ env.PRDestinationBranch }}"
           pr_label: "repo-sync-automated"
           github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
