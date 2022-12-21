@@ -1,0 +1,30 @@
+name: Code Changes
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+jobs:
+  code-changes:
+    if: ${{ github.event.label.name == 'repo-sync-automated' }}
+    runs-on: ubuntu-latest
+    env:
+      TargetRepo: repo-sync
+    steps:
+      - name: Checkout ${{ env.TargetRepo }} branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ env.TargetRepo }}
+
+      - name: Get latest tivo/actions-runner release
+        run: echo "GH_RUNNER_VERSION=$(curl -sL https://api.github.com/repos/tivo/actions-runner/releases/latest | jq -r \".tag_name\"" >> $GITHUB_ENV
+
+      - name: Replace Jenkinsfile runner version
+        run: sed -i '' "s/imageVersion = .*$/imageVersion = '${GH_RUNNER_VERSION:1}'/" Jenkinsfile
+
+      - name: Commit changes to ${{ env.TargetRepo }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "[Automated] apply runner version to Jenkinsfile"
+          add: '["./Jenkinsfile"]'
