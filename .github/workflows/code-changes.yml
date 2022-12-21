@@ -7,7 +7,7 @@ on:
 
 jobs:
   code-changes:
-    if: ${{ github.event.label.name == 'repo-sync-automated' }}
+    if: ${{ github.ref == 'refs/heads/repo-sync' }} && ${{ github.event.label.name == 'repo-sync-automated' }}
     runs-on: ubuntu-latest
     env:
       TargetRepo: repo-sync
