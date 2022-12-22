@@ -18,13 +18,14 @@ jobs:
           ref: ${{ env.TargetRepo }}
 
       - name: Get latest tivo/actions-runner release
-        run: echo "GH_RUNNER_VERSION=$(curl -sL https://api.github.com/repos/tivo/actions-runner/releases/latest | jq -r .tag_name)" >> $GITHUB_ENV
+        run: |
+          echo "GH_RUNNER_VERSION=$(curl -sL https://api.github.com/repos/tivo/actions-runner/releases/latest | jq -r .tag_name | cut -c2-)" >> $GITHUB_ENV
 
       - name: Replace Jenkinsfile runner version
         run: |
           git fetch
           git checkout origin/tivo-build -- Jenkinsfile
-          sed -i "s/imageVersion = .*$/imageVersion = '${GH_RUNNER_VERSION:1}'/" ./Jenkinsfile
+          sed -i "s/imageVersion = .*$/imageVersion = '${{ env.GH_RUNNER_VERSION }}'/" ./Jenkinsfile
 
       - name: Commit changes to ${{ env.TargetRepo }}
         uses: EndBug/add-and-commit@v9
