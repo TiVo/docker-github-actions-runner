@@ -1,7 +1,7 @@
 #!groovy
 
 imageName = 'gh-action-runner-base'
-imageVersion = 'ull'
+imageVersion = '2.300.2'
 imageTargetPlatform = 'linux-x64' // build linux-x64 only
 
 def buildId 
