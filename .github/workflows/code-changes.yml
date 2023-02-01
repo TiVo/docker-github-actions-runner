@@ -2,12 +2,16 @@ name: Code Changes
 
 on:
   pull_request:
-    types: [labeled]
+    types:
+      - opened
+      - labeled
+    branches:
+      - repo-sync
   workflow_dispatch:
 
 jobs:
   code-changes:
-    if: ${{ github.ref == 'refs/heads/repo-sync' }} && ${{ github.event.label.name == 'repo-sync-automated' }}
+    if: contains(github.event.pull_request.labels.*.name, 'repo-sync-automated')
     runs-on: ubuntu-latest
     env:
       TargetRepo: repo-sync
