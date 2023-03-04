@@ -27,7 +27,10 @@ jobs:
           source_branch: master
           destination_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
           github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
-      - uses: repo-sync/pull-request@v2
+      # - uses: repo-sync/pull-request@v2
+      # use fix-diff version because of HTTP 422 errors
+      # https://github.com/repo-sync/pull-request/issues/119
+      - uses: repo-sync/pull-request@fix-diff
         name: Create pull request
         with:
           source_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
