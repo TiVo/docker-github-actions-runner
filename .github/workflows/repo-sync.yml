@@ -37,4 +37,5 @@ jobs:
           destination_branch: ${{ env.PRDestinationBranch }}
           pr_title: "[Automated] ${{ github.ref }} into ${{ env.PRDestinationBranch }}"
           pr_label: "repo-sync-automated"
+          pr_allow_empty: true
           github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
