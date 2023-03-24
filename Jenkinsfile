@@ -1,7 +1,6 @@
 #!groovy
 
 imageName = 'gh-action-runner-base'
-imageVersion = '2.303.0'
 imageTargetPlatform = 'linux-x64' // build linux-x64 only
 
 def buildId 
@@ -21,6 +20,7 @@ pipeline {
                 script {
                     if (env.BRANCH_NAME ==~ /(tivo-build)/) {
                         buildId = "${imageVersion}-${imageTargetPlatform}"
+                        env.imageVersion = readFile(file: "runnerVersion")
                         docker.withRegistry( 'https://docker.tivo.com', 'docker-registry' ) {
                             image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile.tivo-build --build-arg TARGETPLATFORM=${imageTargetPlatform} --build-arg GH_RUNNER_VERSION=${imageVersion} ." )
                             image.push()
