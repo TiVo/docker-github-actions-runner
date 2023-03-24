@@ -22,7 +22,7 @@ pipeline {
                         buildId = "${imageVersion}-${imageTargetPlatform}"
                         env.imageVersion = readFile(file: "runnerVersion")
                         docker.withRegistry( 'https://docker.tivo.com', 'docker-registry' ) {
-                            image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile.tivo-build --build-arg TARGETPLATFORM=${imageTargetPlatform} --build-arg GH_RUNNER_VERSION=${imageVersion} ." )
+                            image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile.tivo-build --build-arg TARGETPLATFORM=${imageTargetPlatform} --build-arg GH_RUNNER_VERSION=${env.imageVersion} ." )
                             image.push()
                         }
                     }
