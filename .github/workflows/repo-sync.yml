@@ -17,7 +17,7 @@ jobs:
       runner_version_upstream: ${{ steps.get_upstream_ver.outputs.runner_version }}
       runner_version_tivo: ${{ steps.get_tivo_ver.outputs.runner_version }}
     steps:
-      - name: Get version number of latest actions/runner release
+      - name: Get version number of latest myoung34/docker-github-actions-runner release
         id: get_upstream_ver
         run: |
           UPSTREAM_VER=$(curl -sL https://api.github.com/repos/myoung34/docker-github-actions-runner/releases/latest | jq -r .tag_name)
