@@ -28,7 +28,7 @@ jobs:
         id: get_tivo_ver
         run: |
           git fetch
-          git restore --source tivo-build -- runnerVersion
+          git checkout tivo-build -- runnerVersion
           TIVO_VER=$(cat runnerVersion)
           echo "gh_runner_version_tivo=$TIVO_VER" >> $GITHUB_ENV
           echo "runner_version=$TIVO_VER" >> $GITHUB_OUTPUT
