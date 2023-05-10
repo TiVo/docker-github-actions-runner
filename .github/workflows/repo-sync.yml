@@ -55,7 +55,7 @@ jobs:
         uses: repo-sync/github-sync@v2
         with:
           source_repo: ${{ secrets.REPO_SYNC_SOURCE_REPO }}
-          source_branch: v${{ env.gh_runner_version_upstream }}
+          source_branch: ${{ env.gh_runner_version_upstream }}
           destination_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
           github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
       # - uses: repo-sync/pull-request@v2
