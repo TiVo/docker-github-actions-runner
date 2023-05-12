@@ -6,26 +6,26 @@ on:
   workflow_dispatch:
     
 env:
-  PR_DESTINATION_BRANCH: 'tivo-build'
+  DESTINATION_BRANCH: 'tivo-build'
 
 jobs:
   compare-runner-versions:
-    name: Compare tivo/docker-github-actions-runner and myoung34/docker-github-actions-runner release compare-runner-versions
+    name: Compare "./runnerVersion" and "myoung34/docker-github-actions-runner" release versions
     runs-on: ubuntu-latest
     outputs:
       runner_version_mismatch: ${{ steps.compare_runner_versions.outputs.runner_version_mismatch }}
-      runner_version_upstream: ${{ steps.get_upstream_ver.outputs.runner_version }}
-      runner_version_tivo: ${{ steps.get_tivo_ver.outputs.runner_version }}
+      runner_version_upstream: ${{ steps.get_upstream_release_version.outputs.runner_version }}
+      runner_version_local: ${{ steps.get_local_release_version.outputs.runner_version }}
     steps:
       - name: Get version number of latest myoung34/docker-github-actions-runner release
-        id: get_upstream_ver
+        id: get_upstream_release_version
         run: |
           UPSTREAM_VER=$(curl -sL https://api.github.com/repos/myoung34/docker-github-actions-runner/releases/latest | jq -r .tag_name)
           echo "gh_runner_version_upstream=$UPSTREAM_VER" >> $GITHUB_ENV
           echo "runner_version=$UPSTREAM_VER" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
       - name: Get version number of latest tivo/actions-runner release
-        id: get_tivo_ver
+        id: get_local_release_version
         run: |
           git fetch
           git checkout origin/tivo-build -- runnerVersion
@@ -47,29 +47,24 @@ jobs:
     env:
       gh_runner_version_mismatch: ${{ needs.compare-runner-versions.outputs.runner_version_mismatch }}
       gh_runner_version_upstream: ${{ needs.compare-runner-versions.outputs.runner_version_upstream }}
-      gh_runner_version_tivo: ${{ needs.compare-runner-versions.outputs.runner_version_tivo }}
+      gh_runner_version_local: ${{ needs.compare-runner-versions.outputs.runner_version_local }}
+      upstream_repo: "myoung34/docker-github-actions-runner"
     steps:
       - name: Perform checkout
         uses: actions/checkout@v3
-      - name: Sync repo to branch
-        uses: repo-sync/github-sync@v2
         with:
-          source_repo: ${{ secrets.REPO_SYNC_SOURCE_REPO }}
-          source_branch: ${{ env.gh_runner_version_upstream }}
-          destination_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
-          github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
-      # - uses: repo-sync/pull-request@v2
-      # use fix-diff version because of HTTP 422 errors
-      # https://github.com/repo-sync/pull-request/issues/119
-      - name: Create pull request
-        uses: repo-sync/pull-request@fix-diff
+          ref: ${{ env.DESTINATION_BRANCH }}
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
-          source_branch: ${{ secrets.REPO_SYNC_INTERMEDIATE_BRANCH }}
-          destination_branch: ${{ env.PR_DESTINATION_BRANCH }}
-          pr_title: "[Automated] ${{ github.ref }} into ${{ env.PR_DESTINATION_BRANCH }}"
-          pr_label: "repo-sync-automated"
-          pr_allow_empty: true
-          github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
+          target_sync_branch: ${{ env.DESTINATION_BRANCH }}
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_branch: v${{ env.gh_runner_version_upstream }}
+          upstream_sync_repo: ${{ env.upstream_repo }}
+          upstream_repo_access_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
+          upstream_pull_args: '-s recursive -Xtheirs' # overwrite everything in tivo-build branch
+          test_mode: false
 
   code-changes:
     name: "Code changes"
@@ -77,18 +72,17 @@ jobs:
     needs: [compare-runner-versions, repo-sync]
     runs-on: ubuntu-latest
     env:
-      TargetBranch: repo-sync
       gh_runner_version_upstream: ${{ needs.compare-runner-versions.outputs.runner_version_upstream }}
     steps:
       - name: Perform checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.TargetBranch }}
+          ref: ${{ env.DESTINATION_BRANCH }}
       - name: Update runnerVersion file
         run: |
           git fetch
           cat "$gh_runner_version_upstream" >> ./runnerVersion
-      - name: Commit changes to ${{ env.TargetBranch }}
+      - name: Commit changes to ${{ env.DESTINATION_BRANCH }}
         uses: EndBug/add-and-commit@v9
         with:
           message: "[Automated] update runner version"
