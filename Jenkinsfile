@@ -19,10 +19,10 @@ pipeline {
             steps {
                 script {
                     if (env.BRANCH_NAME ==~ /(tivo-build)/) {
+                        imageVersion = readFile(file: "runnerVersion")
                         buildId = "${imageVersion}-${imageTargetPlatform}"
-                        env.imageVersion = readFile(file: "runnerVersion")
                         docker.withRegistry( 'https://docker.tivo.com', 'docker-registry' ) {
-                            image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile --build-arg TARGETPLATFORM=${imageTargetPlatform} --build-arg GH_RUNNER_VERSION=${env.imageVersion} ." )
+                            image = docker.build( "devops/${imageName}:${buildId}", "-f Dockerfile --build-arg TARGETPLATFORM=${imageTargetPlatform} --build-arg GH_RUNNER_VERSION=${imageVersion} ." )
                             image.push()
                         }
                     }
