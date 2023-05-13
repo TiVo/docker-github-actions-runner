@@ -81,7 +81,7 @@ jobs:
       - name: Update runnerVersion file
         run: |
           git fetch
-          cat "$gh_runner_version_upstream" >> ./runnerVersion
+          echo "$gh_runner_version_upstream" >> ./runnerVersion
       - name: Commit changes to ${{ env.DESTINATION_BRANCH }}
         uses: EndBug/add-and-commit@v9
         with:
