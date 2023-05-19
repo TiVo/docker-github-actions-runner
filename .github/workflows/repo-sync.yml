@@ -60,7 +60,7 @@ jobs:
         with:
           target_sync_branch: ${{ env.DESTINATION_BRANCH }}
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_sync_branch: v${{ env.gh_runner_version_upstream }}
+          upstream_sync_branch: ${{ env.gh_runner_version_upstream }}
           upstream_sync_repo: ${{ env.upstream_repo }}
           upstream_repo_access_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
           upstream_pull_args: '-s recursive -Xtheirs' # overwrite everything in tivo-build branch
