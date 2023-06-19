@@ -31,11 +31,6 @@ Also, some GitHub Actions Workflow features, like [Job Services](https://docs.gi
 
 Currently runners [do not support containerd](https://github.com/actions/runner/issues/1265)
 
-### Docker-Compose on ARM ###
-
-Please note `docker-compose` does not currently work on ARM ([see issue](https://github.com/docker/compose/issues/6831)) so it is not installed on ARM based builds here.
-A workaround exists, please see [here](https://github.com/myoung34/docker-github-actions-runner/issues/72#issuecomment-804723656)
-
 ## Docker Artifacts ##
 
 | Container Base | Supported Architectures | Tag Regex | Docker Tags | Description | Notes |
@@ -74,3 +69,4 @@ These containers are built via Github actions that [copy the dockerfile](https:/
 | `CONFIGURED_ACTIONS_RUNNER_FILES_DIR` | Path to use for runner data. It allows avoiding reregistration each the start of the runner. No default value. |
 | `EPHEMERAL` | Optional flag to configure runner with [`--ephemeral` option](https://docs.github.com/en/actions/hosting-your-own-runners/autoscaling-with-self-hosted-runners#using-ephemeral-runners-for-autoscaling). Ephemeral runners are suitable for autoscaling. |
 | `DISABLE_AUTO_UPDATE` | Optional environment variable to [disable auto updates](https://github.blog/changelog/2022-02-01-github-actions-self-hosted-runners-can-now-disable-automatic-updates/). Auto updates are enabled by default to preserve past behavior. Any value is considered truthy and will disable them. |
+| `START_DOCKER_SERVICE` | Optional flag which automatically starts the docker service if set to `true`. Useful when using [sysbox](https://github.com/nestybox/sysbox). Defaults to `false`.
