@@ -120,7 +120,6 @@ configure_runner() {
     ARGS+=("--disableupdate")
   fi
 
-  echo "${NO_DEFAULT_LABELS}"
   if [ -n "${NO_DEFAULT_LABELS}" ]; then
     echo "Disabling default labels"
     ARGS+=("--no-default-labels")
