@@ -1,8 +1,8 @@
 name: Repo Sync
 
 on:
-  schedule:
-    - cron: "15 0 * * *"
+  repository_dispatch:
+    types: [start_build]
   workflow_dispatch:
     
 env:
