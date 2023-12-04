@@ -1,27 +1,105 @@
 name: Repo Sync
 
 on:
-  # schedule:
-  #   - cron: "*/15 * * * *" # every 15 minutes. set to whatever interval you like
+  schedule:
+    - cron: "15 0 * * *"
   workflow_dispatch:
+    
+env:
+  DESTINATION_BRANCH: 'tivo-build'
+  RUNNER_REPO_UPSTREAM: 'actions/runner'
+  RUNNER_REPO_DOWNSTREAM: 'tivo/actions-runner'
+  RUNNER_DOCKER_REPO_UPSTREAM: 'myoung34/docker-github-actions-runner'
+  RUNNER_DOCKER_REPO_DOWNSTREAM: 'tivo/docker-github-actions-runner'
 
 jobs:
-  repo-sync:
-    name: Repo Sync
+  compare-runner-releases:
+    name: Compare "tivo/actions-runner" and "actions/runner" release versions
     runs-on: ubuntu-latest
+    outputs:
+      release_mismatch: ${{ steps.compare_versions.outputs.release_mismatch }}
+      upstream_release_version: ${{ steps.get_runner_release_versions.outputs.runner_docker_release_upstream }}
+      downstream_release_version: ${{ steps.get_runner_release_versions.outputs.runner_docker_release_downstream }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: repo-sync/github-sync@v2
-        name: Sync repo to branch
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get all release versions
+        id: get_runner_release_versions
+        run: |
+          UPSTREAM_RUNNER_VER=$(curl -sL https://api.github.com/repos/$RUNNER_REPO_UPSTREAM/releases/latest | jq -r .tag_name)
+          DOWNSTREAM_RUNNER_VER=$(curl -sL https://api.github.com/repos/$RUNNER_REPO_DOWNSTREAM/releases/latest | jq -r .tag_name)
+          UPSTREAM_RUNNER_DOCKER_VER=$(curl -sL https://api.github.com/repos/$RUNNER_DOCKER_REPO_UPSTREAM/releases/latest | jq -r .tag_name)
+          DOWNSTREAM_RUNNER_DOCKER_VER=$(curl -sL https://api.github.com/repos/$RUNNER_DOCKER_REPO_DOWNSTREAM/releases/latest | jq -r .tag_name)
+          echo "runner_release_upstream=$UPSTREAM_RUNNER_VER" >> $GITHUB_ENV
+          echo "runner_release_downstream=$DOWNSTREAM_RUNNER_VER" >> $GITHUB_ENV
+          echo "runner_docker_release_upstream=$UPSTREAM_RUNNER_DOCKER_VER" >> $GITHUB_ENV
+          echo "runner_docker_release_downstream=$DOWNSTREAM_RUNNER_DOCKER_VER" >> $GITHUB_ENV
+          echo "runner_docker_release_upstream=$UPSTREAM_RUNNER_DOCKER_VER" >> $GITHUB_OUTPUT
+          echo "runner_docker_release_downstream=$DOWNSTREAM_RUNNER_DOCKER_VER" >> $GITHUB_OUTPUT
+
+      - name: Compare release versions
+        id: compare_versions
+        run: |
+          ([[ "${{ env.runner_release_upstream }}" == "${{ env.runner_release_downstream }}" ]] && [[ "${{ env.runner_docker_release_upstream }}" == "${{ env.runner_docker_release_downstream }}" ]]) \
+          && echo "release_mismatch=false" >> $GITHUB_OUTPUT \
+          || echo "release_mismatch=true" >> $GITHUB_OUTPUT
+
+  repo-sync:
+    name: Sync upstream changes to downstream branch
+    if: needs.compare-runner-releases.outputs.release_mismatch == 'true'
+    needs: compare-runner-releases
+    runs-on: ubuntu-latest
+    env:
+      runner_image_version_mismatch: ${{ needs.compare-runner-releases.outputs.release_mismatch }}
+      runner_docker_release_tag: ${{ needs.compare-runner-releases.outputs.upstream_release_version }}
+      downstream_runner_image_release: ${{ needs.compare-runner-releases.outputs.downstream_release_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
-          source_repo: ${{ secrets.REPO_SYNC_SOURCE_REPO }}
-          source_branch: master
-          destination_branch: ${{ secrets.FORK_SYNC_INTERMEDIATE_BRANCH }}
-          github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
-      - uses: repo-sync/pull-request@v2
-        name: Create pull request
+          ref: ${{ env.DESTINATION_BRANCH }}
+
+      - name:
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
-          source_branch: ${{ secrets.FORK_SYNC_INTERMEDIATE_BRANCH }}
-          destination_branch: master
-          pr_title: "[Automated] ${{ github.ref }} into main"
-          github_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
+          target_sync_branch: ${{ env.DESTINATION_BRANCH }}
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_branch: ${{ env.runner_docker_release_tag }}
+          upstream_sync_repo: ${{ env.RUNNER_DOCKER_REPO_UPSTREAM }}
+          upstream_repo_access_token: ${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}
+          upstream_pull_args: '-s recursive -Xtheirs' # overwrite everything in tivo-build branch
+          test_mode: false
+
+  update-version:
+    name: Update runner image version
+    if: needs.compare-runner-releases.outputs.release_mismatch == 'true'
+    needs: [compare-runner-releases, repo-sync]
+    runs-on: ubuntu-latest
+    env:
+      upstream_release_version: ${{ needs.compare-runner-releases.outputs.upstream_release_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.DESTINATION_BRANCH }}
+
+      - name: Update runnerVersion file
+        run: |
+          git fetch
+          echo "$upstream_release_version" > ./runnerVersion
+
+      - name: Commit changes to ${{ env.DESTINATION_BRANCH }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "[Automated] update runner version"
+          add: '["./runnerVersion"]'
+
+      - name: Create release
+        uses: actions/create-release@v1.1.4
+        env:
+          GITHUB_TOKEN: "${{ secrets.TIVOBOT_GITHUB_ACTION_TOKEN }}"
+        with:
+          tag_name: ${{ env.upstream_release_version }}
+          release_name: ${{ env.upstream_release_version }}
