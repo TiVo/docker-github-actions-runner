@@ -10,6 +10,11 @@ This will run the [new self-hosted github actions runners](https://help.github.c
 Please see [the wiki](https://github.com/myoung34/docker-github-actions-runner/wiki/Usage)
 Please read [the contributing guidelines](https://github.com/myoung34/docker-github-actions-runner/blob/master/CONTRIBUTING.md)
 
+
+## Included software and configuration ##
+
+While this project is not perfectly 1:1 with the software upstream, the included packages etc are available [here](https://github.com/myoung34/docker-github-actions-runner/blob/master/build/config.json). Documentation can be found in [the wiki](https://github.com/myoung34/docker-github-actions-runner/wiki/Usage#modifications)
+
 ## Notes ##
 
 ### Security ###
@@ -73,7 +78,7 @@ These containers are built via Github actions that [copy the dockerfile](https:/
 | `NO_DEFAULT_LABELS` | Optional environment variable to disable adding the default self-hosted, platform, and architecture labels to the runner. Any value is considered truthy and will disable them. |
 | `DEBUG_ONLY` | Optional boolean to print debug output but not run any actual registration or runner commands. Used in CI and testing. Default: false |
 | `DEBUG_OUTPUT` | Optional boolean to print additional debug output. Default: false |
-
+| `UNSET_CONFIG_VARS` | Optional flag to unset all configuration environment variables after runner setup but before starting the runner. This prevents these variables from leaking into the workflow environment. Set to 'true' to enable. Defaults to 'false' for backward compatibility. |
 
 ## Tests ##
 
@@ -87,16 +92,16 @@ The test file expects the image to test as an environment variable `GH_RUNNER_IM
 
 To test:
 ```
+$ # need to set minimum vars for the goss test interpolation
+$ echo "os: ubuntu" >goss_vars.yaml
+$ echo "oscodename: focal" >>goss_vars.yaml
+$ echo "arch: x86_64" >>goss_vars.yaml
 $ docker build -t my-base-test -f Dockerfile.base .
-$ # Run the base test from Dockerfile.base on the current git HEAD
-$ GH_RUNNER_IMAGE="my-base-test" GOSS_FILE=goss_base.yaml GOSS_SLEEP=1 dgoss run --entrypoint /usr/bin/sleep -e RUNNER_NAME=test -e DEBUG_ONLY=true \
-  ${GH_RUNNER_IMAGE} \
-  10
 $ # Use the base image in your final
 $ sed -i.bak 's/^FROM.*/FROM my-base-test/g' Dockerfile
 $ docker build -t my-full-test -f Dockerfile .
 $ # Run the full test from Dockerfile.base on the current git HEAD
-$ GH_RUNNER_IMAGE="my-full-test" GOSS_FILE=goss_full.yaml GOSS_SLEEP=1 dgoss run --entrypoint /usr/bin/sleep \
+$ GOSS_VARS=goss_vars.yaml GOSS_FILE=goss_full.yaml GOSS_SLEEP=1 dgoss run --entrypoint /usr/bin/sleep \
   -e DEBUG_ONLY=true \
   -e RUNNER_NAME=huzzah \
   -e REPO_URL=https://github.com/myoung34/docker-github-actions-runner \
@@ -111,11 +116,11 @@ $ GH_RUNNER_IMAGE="my-full-test" GOSS_FILE=goss_full.yaml GOSS_SLEEP=1 dgoss run
   -e ENTERPRISE_NAME=emyoung34 \
   -e LABELS=blue,green \
   -e RUNNER_TOKEN=3456 \
-  -e RUNNER_WORKDIR=tmp/a \
+  -e RUNNER_WORKDIR=/tmp/a \
   -e RUNNER_GROUP=wat \
   -e GITHUB_HOST=github.example.com \
   -e DISABLE_AUTOMATIC_DEREGISTRATION=true \
   -e EPHEMERAL=true \
   -e DISABLE_AUTO_UPDATE=true \
-  ${GH_RUNNER_IMAGE} 10
+  my-full-test 10
 ```
