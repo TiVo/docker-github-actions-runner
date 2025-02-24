@@ -11,4 +11,4 @@ curl -L "https://github.com/TiVo/actions-runner/releases/download/v${GH_RUNNER_V
 tar -zxf actions.tar.gz
 rm -f actions.tar.gz
 ./bin/installdependencies.sh
-mkdir /_work
+mkdir -p /_work
